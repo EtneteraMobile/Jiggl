@@ -4,7 +4,7 @@ import Preferences
 import api.JiraApi
 import api.TogglApi
 import api.models.LogWorkInput
-import io.ktor.client.features.*
+import io.ktor.client.plugins.*
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.*

@@ -22,8 +22,6 @@ data class TogglTimeEntry(
     val duration: Int = 0,
     @SerialName("duronly")
     val duronly: Boolean,
-    @SerialName("guid")
-    val guid: String,
     @SerialName("id")
     val id: Long,
     @SerialName("pid")

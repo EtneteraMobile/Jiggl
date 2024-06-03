@@ -1,10 +1,10 @@
 plugins {
-    id 'org.jetbrains.kotlin.js' version '1.4.10'
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.10'
+    id 'org.jetbrains.kotlin.js' version '1.9.10'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10'
 }
 
 group 'cz.fsvoboda'
-version '0.3.2'
+version '0.3.3'
 
 repositories {
     mavenCentral()
@@ -13,13 +13,16 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.4.0-M1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3"
 //    implementation "io.ktor:ktor-client-core-js:1.2.6"
-    implementation "io.ktor:ktor-client-js:1.4.1"
-    implementation "io.ktor:ktor-client-json-js:1.4.1"
-    implementation "io.ktor:ktor-client-serialization-js:1.4.1"
+    implementation "io.ktor:ktor-client-js:2.3.11"
+    implementation "io.ktor:ktor-client-json-js:2.3.11"
+    implementation "io.ktor:ktor-client-serialization-js:2.3.11"
+//    implementation "io.ktor:ktor-server-content-negotiation-jvm:2.3.11" // new
+    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.11" // new
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
 //    implementation "io.ktor:ktor-client-serialization:1.2.6"
-    implementation "org.jetbrains.kotlinx:kotlinx-html-js:0.6.12"
+    implementation "org.jetbrains.kotlinx:kotlinx-html-js:0.10.1"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-js"
 }
@@ -27,6 +30,17 @@ dependencies {
 kotlin.target.browser {
     distribution {
         directory = file("$projectDir/build/extension/")
+    }
+}
+
+kotlin {
+    js {
+        browser {
+            distribution {
+                directory = file("$projectDir/build/extension/")
+            }
+        }
+        binaries.executable()
     }
 }
 

@@ -4,12 +4,13 @@ import api.models.TogglTimeEntry
 import api.models.TogglTimeEntryList
 import api.models.TogglUserData
 import io.ktor.client.HttpClient
+import io.ktor.client.call.*
 import io.ktor.client.engine.js.Js
-import io.ktor.client.features.*
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
-import io.ktor.http.URLProtocol
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import utils.extensions.toBase64
 import kotlin.js.Date
@@ -33,20 +34,20 @@ object TogglApi {
                 url.protocol = URLProtocol.HTTPS
                 header("Authorization", "Basic " + "${this@TogglApi.apiToken}:api_token".toBase64())
             }
-            install(JsonFeature) {
-                serializer = KotlinxSerializer(Json {
+            install(ContentNegotiation) {
+                json(Json {
                     ignoreUnknownKeys = true
                 })
             }
             HttpResponseValidator {
                 validateResponse { response ->
                     when (response.status.value) {
-                        in 300..399 -> throw RedirectResponseException(response)
-                        in 400..499 -> throw ClientRequestException(response)
-                        in 500..599 -> throw ServerResponseException(response)
+                        in 300..399 -> throw RedirectResponseException(response, "message")
+                        in 400..499 -> throw ClientRequestException(response, "message")
+                        in 500..599 -> throw ServerResponseException(response, "message")
                     }
                     if (response.status.value >= 600) {
-                        throw ResponseException(response)
+                        throw ResponseException(response, "message")
                     }
                 }
             }
@@ -60,15 +61,21 @@ object TogglApi {
      * @param endDate End date in ISO format.
      */
     suspend fun getTimeEntries(startDate: Date, endDate: Date): List<TogglTimeEntry> =
-        client.get<TogglTimeEntryList> {
-            url { encodedPath = "/api/v8/time_entries?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}" }
-        }.items
+        client.get {
+            url {
+                encodedPath = "/api/v9/me/time_entries?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}"
+            }
+        }.body<TogglTimeEntryList>().items
 
     /**
      * Get toggl user data.
      */
     suspend fun getUserData(token: String): TogglUserData {
         apiToken = token
-        return client.get(path = "/api/v8/me?with_related_data=true")
+        return client.get {
+            url {
+                encodedPath = "/api/v9/me?with_related_data=true"
+            }
+        }.body()
     }
 }

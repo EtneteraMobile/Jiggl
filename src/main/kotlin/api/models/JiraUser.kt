@@ -19,12 +19,8 @@ data class JiraUser(
     val expand: String,
     @SerialName("groups")
     val groups: Groups,
-    @SerialName("key")
-    val key: String,
     @SerialName("locale")
     val locale: String,
-    @SerialName("name")
-    val name: String,
     @SerialName("self")
     val self: String,
     @SerialName("timeZone")
