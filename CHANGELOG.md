@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.3.3] - 2024-03-06
+## [0.3.3] - unreleased
 ### Fixed
-- Toggl api v8 -> v9
+- issue/59 - Toggl api v8 -> v9
 
 ## [0.3.2] - 2021-11-08
 ### Fixed

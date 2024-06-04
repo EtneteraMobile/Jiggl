@@ -14,14 +14,11 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3"
-//    implementation "io.ktor:ktor-client-core-js:1.2.6"
     implementation "io.ktor:ktor-client-js:2.3.11"
     implementation "io.ktor:ktor-client-json-js:2.3.11"
     implementation "io.ktor:ktor-client-serialization-js:2.3.11"
-//    implementation "io.ktor:ktor-server-content-negotiation-jvm:2.3.11" // new
-    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.11" // new
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
-//    implementation "io.ktor:ktor-client-serialization:1.2.6"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.11"
+    implementation "io.ktor:ktor-client-content-negotiation:2.3.11"
     implementation "org.jetbrains.kotlinx:kotlinx-html-js:0.10.1"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-js"

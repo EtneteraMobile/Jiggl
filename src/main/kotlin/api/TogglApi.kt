@@ -42,12 +42,12 @@ object TogglApi {
             HttpResponseValidator {
                 validateResponse { response ->
                     when (response.status.value) {
-                        in 300..399 -> throw RedirectResponseException(response, "message")
-                        in 400..499 -> throw ClientRequestException(response, "message")
-                        in 500..599 -> throw ServerResponseException(response, "message")
+                        in 300..399 -> throw RedirectResponseException(response, response.toString())
+                        in 400..499 -> throw ClientRequestException(response, response.toString())
+                        in 500..599 -> throw ServerResponseException(response, response.toString())
                     }
                     if (response.status.value >= 600) {
-                        throw ResponseException(response, "message")
+                        throw ResponseException(response, response.toString())
                     }
                 }
             }
