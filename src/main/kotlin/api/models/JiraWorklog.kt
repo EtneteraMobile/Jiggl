@@ -25,7 +25,7 @@ data class JiraWorklog(
         @SerialName("author")
         val author: Author,
         @SerialName("comment")
-        val comment: String,
+        val comment: String? = null,
         @SerialName("created")
         @Serializable(with = DateSerializer::class)
         val created: Date,
@@ -58,10 +58,6 @@ data class JiraWorklog(
             val displayName: String,
             @SerialName("emailAddress")
             val emailAddress: String,
-            @SerialName("key")
-            val key: String,
-            @SerialName("name")
-            val name: String,
             @SerialName("self")
             val self: String,
             @SerialName("timeZone")
@@ -90,10 +86,6 @@ data class JiraWorklog(
             val displayName: String,
             @SerialName("emailAddress")
             val emailAddress: String,
-            @SerialName("key")
-            val key: String,
-            @SerialName("name")
-            val name: String,
             @SerialName("self")
             val self: String,
             @SerialName("timeZone")

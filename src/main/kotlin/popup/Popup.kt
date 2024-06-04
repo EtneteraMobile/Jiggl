@@ -4,7 +4,7 @@ import Preferences
 import api.JiraApi
 import api.TogglApi
 import api.models.LogWorkInput
-import io.ktor.client.features.*
+import io.ktor.client.plugins.*
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.*
@@ -349,7 +349,7 @@ class Popup {
                         JiraApi.getWorklog(jiraUrl, log.issue).worklogs.forEach { worklog ->
                             if (myEmailAddresses[jiraUrl] == worklog.author.emailAddress) {
                                 val diff = abs(floor(worklog.timeSpentSeconds / 60f) - floor(log.timeSpentInt / 60f))
-                                if (worklog.started.toDDMMYY() == log.started.toDDMMYY() && diff == 0f) {
+                                if (worklog.started.toDDMMYY() == log.started.toDDMMYY() && diff == 0f && worklog.comment == log.comment) {
                                     (document.getElementById("result-${log.id}") as HTMLElement).apply {
                                         textContent = "OK"
                                         classList.add("success")

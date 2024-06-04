@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.3] - unreleased
+### Fixed
+- issue/59 - Toggl api v8 -> v9
+
 ## [0.3.2] - 2021-11-08
 ### Fixed
 - issue/54 - Jira and Toggl matched with year, month and date
