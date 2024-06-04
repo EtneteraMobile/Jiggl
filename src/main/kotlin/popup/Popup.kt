@@ -349,7 +349,7 @@ class Popup {
                         JiraApi.getWorklog(jiraUrl, log.issue).worklogs.forEach { worklog ->
                             if (myEmailAddresses[jiraUrl] == worklog.author.emailAddress) {
                                 val diff = abs(floor(worklog.timeSpentSeconds / 60f) - floor(log.timeSpentInt / 60f))
-                                if (worklog.started.toDDMMYY() == log.started.toDDMMYY() && diff == 0f) {
+                                if (worklog.started.toDDMMYY() == log.started.toDDMMYY() && diff == 0f && worklog.comment == log.comment) {
                                     (document.getElementById("result-${log.id}") as HTMLElement).apply {
                                         textContent = "OK"
                                         classList.add("success")

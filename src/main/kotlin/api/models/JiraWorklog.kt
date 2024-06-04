@@ -25,7 +25,7 @@ data class JiraWorklog(
         @SerialName("author")
         val author: Author,
         @SerialName("comment")
-        val comment: String,
+        val comment: String? = null,
         @SerialName("created")
         @Serializable(with = DateSerializer::class)
         val created: Date,
