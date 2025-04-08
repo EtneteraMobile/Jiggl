@@ -3,8 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10'
 }
 
-group 'cz.fsvoboda'
-version '0.3.3'
+group 'cz.etnetera'
+version '0.3.4'
 
 repositories {
     mavenCentral()
