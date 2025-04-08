@@ -3,10 +3,14 @@
   "description": "Jiggl allows an easy integration between Jira and Toggl.",
   "version": "0.3.4",
   "permissions": [
-    "storage"
+    "storage",
+    "permissions"
   ],
   "host_permissions": [
     "https://api.track.toggl.com/*",
+    "https://*.atlassian.net/*",
+    "https://jira.*/*",
+    "https://*.jira.com/*",
     "https://go.jira.etnetera.cz/*"
   ],
   "icons": {
