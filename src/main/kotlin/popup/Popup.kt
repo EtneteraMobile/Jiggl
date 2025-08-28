@@ -169,27 +169,28 @@ class Popup {
     }
 
     private fun submitEntries() {
-        logs.forEach {
-            if (!it.submit || it.hidden) return@forEach
+        submit.disabled = true
+        GlobalScope.launch {
+            for (log in logs) {
+                if (!log.submit || log.hidden) continue
 
-            val checkboxElement = document.getElementById(it.id.toString()) as? HTMLInputElement
-            val commentElement = document.getElementById("comment-${it.id}") as? HTMLInputElement
-            val resultElement = document.getElementById("result-${it.id}")?.apply {
-                textContent = "Pending..."
-                addClass("info")
-            }
+                val checkboxElement = document.getElementById(log.id.toString()) as? HTMLInputElement
+                val commentElement = document.getElementById("comment-${log.id}") as? HTMLInputElement
+                val resultElement = document.getElementById("result-${log.id}")?.apply {
+                    textContent = "Pending..."
+                    addClass("info")
+                }
 
-            val input = LogWorkInput(
-                comment = commentElement?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
-                timeSpentSeconds = it.timeSpentInt,
-                started = it.started
-            )
+                val input = LogWorkInput(
+                    comment = commentElement?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
+                    timeSpentSeconds = log.timeSpentInt,
+                    started = log.started
+                )
 
-            GlobalScope.launch {
-                val jiraUrl = getJiraForProject(it.projectId)
-                JiraApi.logWork(jiraUrl, it.issue, input).let { status ->
+                val jiraUrl = getJiraForProject(log.projectId)
+                JiraApi.logWork(jiraUrl, log.issue, input).let { status ->
                     if (status.isSuccess()) {
-                        it.submit = false
+                        log.submit = false
                         resultElement?.apply {
                             textContent = "OK"
                             addClass("success")
@@ -202,7 +203,7 @@ class Popup {
                         }
                     } else {
                         val e = when (status) {
-                            HttpStatusCode.NotFound -> "Issue ${it.issue} not found"
+                            HttpStatusCode.NotFound -> "Issue ${log.issue} not found"
                             else -> "error"
                         }
                         document.querySelector("p#error")?.apply {
@@ -212,6 +213,7 @@ class Popup {
                     }
                 }
             }
+            submit.disabled = false
         }
     }
 
