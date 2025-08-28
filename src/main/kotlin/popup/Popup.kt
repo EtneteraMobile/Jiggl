@@ -320,18 +320,13 @@ class Popup {
                                 id = "comment-${it.id}"
                             }
                         }
-                        td {
-                            id = "result-${it.id}"
-                        }
+                        td { id = "result-${it.id}" }
                     } else {
                         td {
                             colSpan = "3"
                             style = "text-align:center;"
                             text("still running...")
                         }
-                    }
-                    td {
-                        id = "loader-${it.id}"
                     }
                 }
             }
@@ -356,10 +351,8 @@ class Popup {
 
         val jobs: MutableList<Job> = mutableListOf()
         logs.forEach { log ->
-            val loader = (document.getElementById("loader-${log.id}") as HTMLElement)
-            loader.apply {
-                classList.add("loading")
-            }
+            val resultCell = (document.getElementById("result-${log.id}") as? HTMLElement)
+            resultCell?.classList?.add("loading")
             if (!log.hidden) {
                 val job = GlobalScope.launch {
                     val jiraUrl = getJiraForProject(log.projectId)
@@ -372,6 +365,7 @@ class Popup {
                                         textContent = "OK"
                                         classList.add("success")
                                         classList.remove("info")
+                                        classList.remove("loading")
                                     }
                                     (document.getElementById(log.id.toString()) as HTMLInputElement).apply {
                                         checked = false
@@ -386,12 +380,12 @@ class Popup {
                         }
                     } catch (e: ResponseException) {
                         if (e.response.status == HttpStatusCode.NotFound) {
-                            loader.parentElement?.classList?.toggle("red")
+                            resultCell?.parentElement?.classList?.toggle("red")
                         }
                     }
                 }
                 job.invokeOnCompletion {
-                    loader.classList.remove("loading")
+                    resultCell?.classList?.remove("loading")
                 }
                 jobs.add(job)
             }
