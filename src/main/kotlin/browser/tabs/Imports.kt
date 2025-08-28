@@ -1,6 +1,6 @@
-@file:JsQualifier("chrome.tabs")
+@file:JsQualifier("browser.tabs")
 
-package chrome.tabs
+package browser.tabs
 
 import kotlin.js.Promise
 

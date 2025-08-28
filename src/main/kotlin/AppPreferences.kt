@@ -1,25 +1,23 @@
+import browser.storage.sync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Object for accessing app-wide preferences.
  */
 object AppPreferences {
 
-    suspend fun getPreferences(): Preferences =
-        suspendCoroutine {
-            chrome.storage.sync.get(getDefaults()) { items ->
-                it.resume(items)
-            }
-        }
+    suspend fun getPreferences(): Preferences {
+        val result = sync.get(getDefaults()).await()
+        return result.unsafeCast<Preferences>()
+    }
 
     fun setPreferences(prefs: Preferences): Job =
         GlobalScope.launch(Dispatchers.Default) {
-            chrome.storage.sync.set(prefs)
+            sync.set(prefs)
         }
 
     private fun getDefaults(): Preferences =

@@ -45,3 +45,14 @@ task bundle(type: Zip) {
     dependsOn assemble
     from "$projectDir/build/extension"
 }
+
+def browser = project.findProperty('browser') ?: 'chrome'
+
+task copyManifest(type: Copy) {
+    from "src/main/resources"
+    into "$buildDir/processedResources/js/main"
+    include "manifest-${browser}.json"
+    rename "manifest-${browser}.json", "manifest.json"
+}
+
+processResources.dependsOn copyManifest

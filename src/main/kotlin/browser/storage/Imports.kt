@@ -1,6 +1,6 @@
-@file:JsQualifier("chrome.storage")
+@file:JsQualifier("browser.storage")
 
-package chrome.storage
+package browser.storage
 
 import kotlin.js.Promise
 
@@ -37,7 +37,7 @@ external interface StorageArea {
      *      function(object items) {...};
      *      where: items: Object with items in their key-value mappings.
      */
-    fun get(keys: dynamic = definedExternally, callback: (dynamic) -> Unit)
+    fun get(keys: dynamic = definedExternally): Promise<dynamic>
 
     /**
      * Stores one or more items in the storage area, or update existing items.
