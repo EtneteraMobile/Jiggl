@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.3.3] - unreleased
+## [0.4.4] - 2025-08-28
+### Added
+- Firefox implementation
+
+## [0.3.3] - 2024-05-05
 ### Fixed
 - issue/59 - Toggl api v8 -> v9
 

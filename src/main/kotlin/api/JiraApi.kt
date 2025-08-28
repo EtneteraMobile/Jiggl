@@ -85,16 +85,23 @@ object JiraApi {
 
         if (tabs.isNotEmpty() && tabs[0].id != null) {
             val tabId = tabs[0].id as Int
+            val msg = js("({})")
+            msg.type = "jiggl/logWork"
+            msg.issue = issue
+            msg.body = body
             val result = try {
-                sendMessage(tabId, js("({ type: 'jiggl/logWork', issue: issue, body: body })")).await()
+                sendMessage(tabId, msg).await()
             } catch (e: dynamic) {
                 null
             }
-            val status = (result?.asDynamic()?.status ?: 0).unsafeCast<Int>()
-            if (status != 0) {
+            val statusNumber = try {
+                js("Number(result && result.status || 0)") as Double
+            } catch (e: dynamic) { 0.0 }
+            val status = statusNumber.toInt()
+            if (status in 200..299) {
                 return HttpStatusCode.fromValue(status)
             }
-            // If messaging failed, fall back to direct fetch
+            // If messaging failed or non-2xx, fall back to direct fetch
         }
 
         // Fallback: direct cross-origin fetch (works in Chrome; may 403 in Firefox)
