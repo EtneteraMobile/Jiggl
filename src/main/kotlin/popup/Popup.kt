@@ -56,6 +56,9 @@ class Popup {
                 fetchEntries()
             }
             endPicker.onchange = startPicker.onchange
+            // Make clicking the input open the native date picker where supported
+            startPicker.onclick = { openDatePicker(startPicker) }
+            endPicker.onclick = { openDatePicker(endPicker) }
             submit.onclick = {
                 submitEntries()
             }
@@ -72,6 +75,19 @@ class Popup {
             setUserData()
             fetchEntries()
         }
+    }
+
+    private fun openDatePicker(input: HTMLInputElement) {
+        try {
+            val dyn = input.asDynamic()
+            if (dyn.showPicker != undefined) {
+                dyn.showPicker()
+                return
+            }
+        } catch (_: dynamic) { }
+        // Fallback: focus then click to trigger native picker
+        input.focus()
+        input.click()
     }
 
     private suspend fun setUserData() {
