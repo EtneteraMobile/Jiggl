@@ -1,10 +1,17 @@
 {
   "name": "Jiggl (Jira & Toggl Tools)",
   "description": "Jiggl allows an easy integration between Jira and Toggl.",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "permissions": [
     "storage",
-    "<all_urls>"
+    "permissions"
+  ],
+  "host_permissions": [
+    "https://api.track.toggl.com/*",
+    "https://*.atlassian.net/*",
+    "https://jira.*/*",
+    "https://*.jira.com/*",
+    "https://go.jira.etnetera.cz/*"
   ],
   "icons": {
     "32": "/img/jiggl_32.png",
@@ -12,10 +19,10 @@
     "48": "/img/jiggl_48.png",
     "128": "/img/jiggl_128.png"
   },
-  "browser_action": {
+  "action": {
     "default_title": "Log Toggl.com entries to Jira",
     "default_popup": "/html/popup.html"
   },
   "options_page": "/html/options.html",
-  "manifest_version": 2
+  "manifest_version": 3
 }

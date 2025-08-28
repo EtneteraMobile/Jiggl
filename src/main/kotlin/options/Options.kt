@@ -11,7 +11,15 @@ import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import utils.extensions.isVisible
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.dom.clear
+
+external object chrome {
+    object permissions {
+        fun request(options: dynamic, callback: (Boolean) -> Unit)
+        fun contains(options: dynamic, callback: (Boolean) -> Unit)
+    }
+}
 
 @Suppress("UnsafeCastFromDynamic")
 class Options {
@@ -38,9 +46,7 @@ class Options {
 
         roundType.onchange = { onRoundChange() }
         saveButton.onclick = {
-            GlobalScope.launch(Dispatchers.Main) {
-                saveOptions()
-            }
+            onSaveClicked()
         }
 
         togglTokenButton.onclick = {
@@ -93,6 +99,22 @@ class Options {
         roundValSection.isVisible = preferences.roundType != "no-round"
         addJiraServerInput(preferences)
     }
+
+    private fun onSaveClicked() {
+        val jiraInputValue = jiraUrl.value.trim()
+
+        requestJiraPermission(jiraInputValue) { granted ->
+            if (granted) {
+                GlobalScope.launch {
+                    saveOptions()
+                    window.alert("Options saved and permission granted.")
+                }
+            } else {
+                window.alert("Permission denied. Options were not saved.")
+            }
+        }
+    }
+
 
     private suspend fun saveOptions() {
         val options = Preferences {
@@ -210,5 +232,29 @@ class Options {
             }
         }
         return items
+    }
+
+    // Permissions for JiraURL
+
+    private fun requestJiraPermission(url: String, callback: (Boolean) -> Unit) {
+        val formattedOrigin = if (url.endsWith("/")) "$url*" else "$url/*"
+        val options = js("{}")
+        options.origins = arrayOf(formattedOrigin)
+
+        chrome.permissions.contains(options) { alreadyGranted ->
+            if (alreadyGranted) {
+                console.log("Already granted: $formattedOrigin")
+                callback(true)
+            } else {
+                chrome.permissions.request(options) { granted ->
+                    if (granted) {
+                        console.log("Permission granted: $formattedOrigin")
+                    } else {
+                        console.warn("Permission denied: $formattedOrigin")
+                    }
+                    callback(granted)
+                }
+            }
+        }
     }
 }
