@@ -3,12 +3,12 @@
   "description": "Jiggl allows an easy integration between Jira and Toggl.",
   "version": "0.3.5",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://api.track.toggl.com/*",
     "https://*.atlassian.net/*",
-    "https://jira.*/*",
     "https://*.jira.com/*",
     "https://go.jira.etnetera.cz/*"
   ],
@@ -25,6 +25,17 @@
   "background": {
     "scripts": ["/js/browser-polyfill.js", "/Jiggl.js"]
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.atlassian.net/*",
+        "https://*.jira.com/*",
+        "https://go.jira.etnetera.cz/*"
+      ],
+      "js": ["/js/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "options_page": "/html/options.html",
   "browser_specific_settings": {
     "gecko": {
