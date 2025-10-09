@@ -1,5 +1,5 @@
-# Jiggl - Jira & Toggl Tools
-Jiggl is an extension for chrome browser that makes it easy to sync worklogs between Toggl and Jira - always for free.
+# Jiggl - Jira & Toggl Tools for Chrome and Firefox
+Jiggl is an extension for your browser that makes it easy to sync worklogs between Toggl and Jira - always for free.
 
 Project is based on original [Toggl-to-jira](https://github.com/fyyyyy/Toggl-to-Jira-Chrome-Extension) extension.
 
@@ -14,24 +14,46 @@ Project is based on original [Toggl-to-jira](https://github.com/fyyyyy/Toggl-to-
 
 
 ## Develop build
-To build an extension, just run a gradle task
+To build the extension, run the `build` gradle task. You can specify the target browser using the `browser` project property.
+
+### For Chrome
 ```
-./gradlew assemble
+./gradlew build -Pbrowser=chrome
 ```
 
-### Load Extension to Chrome
+### For Firefox
+```
+./gradlew build -Pbrowser=firefox
+```
+
+### Load Extension
+
+#### Chrome
 * go to `chrome://extensions`
 * enable Developer mode in the top right corner
 * click load unpacked and select your build folder `$PROJECT_DIR/build/extension`
 
+#### Firefox
+* go to `about:debugging`
+* click "This Firefox"
+* click "Load Temporary Add-on..."
+* select any file in your build folder `$PROJECT_DIR/build/extension`
+
 ## Distribution build
-To pack extension as zip archive run
+To pack the extension as a zip archive, run the `bundle` task. Make sure to specify the target browser.
+
+### For Chrome
 ```
-./gradlew bundle
+./gradlew bundle -Pbrowser=chrome
+```
+
+### For Firefox
+```
+./gradlew bundle -Pbrowser=firefox
 ```
 
 ## Contributing
-* Fell free to take any open [issue](https://github.com/svob/Jiggl/issues), ideally from upcoming milestone
+* Fell free to take any open [issue](https://github.com/EtneteraMobile/Jiggl/issues), ideally from upcoming milestone
 * For new idea, please add new issue, so we can discuss it
 ##### Before sending PR
 * Update changelog

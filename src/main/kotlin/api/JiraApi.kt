@@ -12,6 +12,13 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import kotlinx.browser.window
+import kotlinx.coroutines.await
+import browser.tabs.query
+import browser.tabs.sendMessage
+import org.w3c.fetch.Headers
+import org.w3c.fetch.RequestCredentials
+import org.w3c.fetch.RequestInit
 
 /**
  * JIRA related endpoints.
@@ -31,7 +38,10 @@ object JiraApi {
                 defaultRequest {
                     url.protocol = it.protocol
                     url.encodedPath = it.encodedPath
-//                    header("X-Atlassian-Token", "nocheck") // may be needed, not sure yet
+                    // Firefox sends an Origin header for extension requests which triggers
+                    // Jira's XSRF protection on modifying requests. Adding this header
+                    // allows cross-origin POST/PUT from the extension while authenticated.
+                    header("X-Atlassian-Token", "no-check")
 //                    header("Access-Control-Allow-Origin", "*")
                 }
                 install(ContentNegotiation) {
@@ -60,16 +70,49 @@ object JiraApi {
      * Logs work to Jira.
      */
     suspend fun logWork(serverHost: String, issue: String, log: LogWorkInput): HttpStatusCode {
-        val response = client.post {
-            url {
-                protocol = Url(serverHost).protocol
-                host = Url(serverHost).host
-                encodedPath = "/rest/api/latest/issue/$issue/worklog"
-            }
-            contentType(ContentType.Application.Json)
-            setBody(log)
+        val base = Url(serverHost)
+        val pattern = "${base.protocol.name}://${base.host}/*"
+        val body = Json.encodeToString(LogWorkInput.serializer(), log)
+
+        // Try to use a content script on an open Jira tab for same-origin POST
+        val qi = js("({})")
+        qi.url = arrayOf(pattern)
+        val tabs = try {
+            query(qi).await()
+        } catch (e: dynamic) {
+            emptyArray()
         }
-        return response.status
+
+        if (tabs.isNotEmpty() && tabs[0].id != null) {
+            val tabId = tabs[0].id as Int
+            val msg = js("({})")
+            msg.type = "jiggl/logWork"
+            msg.issue = issue
+            msg.body = body
+            val result = try {
+                sendMessage(tabId, msg).await()
+            } catch (e: dynamic) {
+                null
+            }
+            val statusNumber = try {
+                js("Number(result && result.status || 0)") as Double
+            } catch (e: dynamic) { 0.0 }
+            val status = statusNumber.toInt()
+            if (status in 200..299) {
+                return HttpStatusCode.fromValue(status)
+            }
+            // If messaging failed or non-2xx, fall back to direct fetch
+        }
+
+        // Fallback: direct cross-origin fetch (works in Chrome; may 403 in Firefox)
+        val url = "${base.protocol.name}://${base.host}/rest/api/latest/issue/$issue/worklog"
+        val headers = Headers()
+        headers.append("Content-Type", "application/json")
+        headers.append("X-Atlassian-Token", "no-check")
+        val init = RequestInit(method = "POST", headers = headers, body = body)
+        init.asDynamic().credentials = "include"
+        val resp = window.fetch(url, init).await()
+        return HttpStatusCode.fromValue(resp.status.toInt())
     }
 
     /**

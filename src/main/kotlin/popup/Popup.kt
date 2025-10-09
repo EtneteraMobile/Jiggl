@@ -56,6 +56,9 @@ class Popup {
                 fetchEntries()
             }
             endPicker.onchange = startPicker.onchange
+            // Make clicking the input open the native date picker where supported
+            startPicker.onclick = { openDatePicker(startPicker) }
+            endPicker.onclick = { openDatePicker(endPicker) }
             submit.onclick = {
                 submitEntries()
             }
@@ -72,6 +75,19 @@ class Popup {
             setUserData()
             fetchEntries()
         }
+    }
+
+    private fun openDatePicker(input: HTMLInputElement) {
+        try {
+            val dyn = input.asDynamic()
+            if (dyn.showPicker != undefined) {
+                dyn.showPicker()
+                return
+            }
+        } catch (_: dynamic) { }
+        // Fallback: focus then click to trigger native picker
+        input.focus()
+        input.click()
     }
 
     private suspend fun setUserData() {
@@ -169,27 +185,28 @@ class Popup {
     }
 
     private fun submitEntries() {
-        logs.forEach {
-            if (!it.submit || it.hidden) return@forEach
+        submit.disabled = true
+        GlobalScope.launch {
+            for (log in logs) {
+                if (!log.submit || log.hidden) continue
 
-            val checkboxElement = document.getElementById(it.id.toString()) as? HTMLInputElement
-            val commentElement = document.getElementById("comment-${it.id}") as? HTMLInputElement
-            val resultElement = document.getElementById("result-${it.id}")?.apply {
-                textContent = "Pending..."
-                addClass("info")
-            }
+                val checkboxElement = document.getElementById(log.id.toString()) as? HTMLInputElement
+                val commentElement = document.getElementById("comment-${log.id}") as? HTMLInputElement
+                val resultElement = document.getElementById("result-${log.id}")?.apply {
+                    textContent = "Pending..."
+                    addClass("info")
+                }
 
-            val input = LogWorkInput(
-                comment = commentElement?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
-                timeSpentSeconds = it.timeSpentInt,
-                started = it.started
-            )
+                val input = LogWorkInput(
+                    comment = commentElement?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
+                    timeSpentSeconds = log.timeSpentInt,
+                    started = log.started
+                )
 
-            GlobalScope.launch {
-                val jiraUrl = getJiraForProject(it.projectId)
-                JiraApi.logWork(jiraUrl, it.issue, input).let { status ->
+                val jiraUrl = getJiraForProject(log.projectId)
+                JiraApi.logWork(jiraUrl, log.issue, input).let { status ->
                     if (status.isSuccess()) {
-                        it.submit = false
+                        log.submit = false
                         resultElement?.apply {
                             textContent = "OK"
                             addClass("success")
@@ -202,7 +219,7 @@ class Popup {
                         }
                     } else {
                         val e = when (status) {
-                            HttpStatusCode.NotFound -> "Issue ${it.issue} not found"
+                            HttpStatusCode.NotFound -> "Issue ${log.issue} not found"
                             else -> "error"
                         }
                         document.querySelector("p#error")?.apply {
@@ -212,6 +229,7 @@ class Popup {
                     }
                 }
             }
+            submit.disabled = false
         }
     }
 
@@ -302,18 +320,13 @@ class Popup {
                                 id = "comment-${it.id}"
                             }
                         }
-                        td {
-                            id = "result-${it.id}"
-                        }
+                        td { id = "result-${it.id}" }
                     } else {
                         td {
                             colSpan = "3"
                             style = "text-align:center;"
                             text("still running...")
                         }
-                    }
-                    td {
-                        id = "loader-${it.id}"
                     }
                 }
             }
@@ -338,10 +351,8 @@ class Popup {
 
         val jobs: MutableList<Job> = mutableListOf()
         logs.forEach { log ->
-            val loader = (document.getElementById("loader-${log.id}") as HTMLElement)
-            loader.apply {
-                classList.add("loading")
-            }
+            val resultCell = (document.getElementById("result-${log.id}") as? HTMLElement)
+            resultCell?.classList?.add("loading")
             if (!log.hidden) {
                 val job = GlobalScope.launch {
                     val jiraUrl = getJiraForProject(log.projectId)
@@ -354,6 +365,7 @@ class Popup {
                                         textContent = "OK"
                                         classList.add("success")
                                         classList.remove("info")
+                                        classList.remove("loading")
                                     }
                                     (document.getElementById(log.id.toString()) as HTMLInputElement).apply {
                                         checked = false
@@ -368,12 +380,12 @@ class Popup {
                         }
                     } catch (e: ResponseException) {
                         if (e.response.status == HttpStatusCode.NotFound) {
-                            loader.parentElement?.classList?.toggle("red")
+                            resultCell?.parentElement?.classList?.toggle("red")
                         }
                     }
                 }
                 job.invokeOnCompletion {
-                    loader.classList.remove("loading")
+                    resultCell?.classList?.remove("loading")
                 }
                 jobs.add(job)
             }

@@ -14,7 +14,7 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.dom.clear
 
-external object chrome {
+external object browser {
     object permissions {
         fun request(options: dynamic, callback: (Boolean) -> Unit)
         fun contains(options: dynamic, callback: (Boolean) -> Unit)
@@ -241,12 +241,12 @@ class Options {
         val options = js("{}")
         options.origins = arrayOf(formattedOrigin)
 
-        chrome.permissions.contains(options) { alreadyGranted ->
+        browser.permissions.contains(options) { alreadyGranted ->
             if (alreadyGranted) {
                 console.log("Already granted: $formattedOrigin")
                 callback(true)
             } else {
-                chrome.permissions.request(options) { granted ->
+                browser.permissions.request(options) { granted ->
                     if (granted) {
                         console.log("Permission granted: $formattedOrigin")
                     } else {
