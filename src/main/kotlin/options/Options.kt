@@ -2,24 +2,20 @@ package options
 
 import Preferences
 import api.TogglApi
+import browser.permissions.contains
+import browser.permissions.request
+import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.*
+import kotlinx.coroutines.await
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.id
 import kotlinx.html.js.*
+import kotlinx.dom.clear
 import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import utils.extensions.isVisible
-import kotlinx.browser.document
-import kotlinx.browser.window
-import kotlinx.dom.clear
-
-external object browser {
-    object permissions {
-        fun request(options: dynamic, callback: (Boolean) -> Unit)
-        fun contains(options: dynamic, callback: (Boolean) -> Unit)
-    }
-}
 
 @Suppress("UnsafeCastFromDynamic")
 class Options {
@@ -36,7 +32,7 @@ class Options {
     private val roundValLabel by lazy { document.getElementById("round-value-label") as HTMLElement }
     private val togglTokenButton by lazy { document.getElementById("toggl-token-button") as HTMLButtonElement }
     private val saveButton by lazy { document.getElementById("save") as HTMLButtonElement }
-    private val addJiraServerButton by lazy { document.getElementById("btn-add-jira") as HTMLButtonElement }
+    private val addJiraServerButton get() = document.getElementById("btn-add-jira") as? HTMLButtonElement
     private val jiraSection by lazy { document.getElementById("jira-section") as HTMLElement }
 
     fun main() {
@@ -78,9 +74,7 @@ class Options {
             }
         }
 
-        addJiraServerButton.onclick = {
-            addJiraServerInput()
-        }
+        addJiraServerButton?.onclick = { addJiraServerInput() }
 
         templatePopup.onclick = { e ->
             showPopup(e)
@@ -238,15 +232,17 @@ class Options {
 
     private fun requestJiraPermission(url: String, callback: (Boolean) -> Unit) {
         val formattedOrigin = if (url.endsWith("/")) "$url*" else "$url/*"
-        val options = js("{}")
+        val options = js("({})")
         options.origins = arrayOf(formattedOrigin)
 
-        browser.permissions.contains(options) { alreadyGranted ->
-            if (alreadyGranted) {
-                console.log("Already granted: $formattedOrigin")
-                callback(true)
-            } else {
-                browser.permissions.request(options) { granted ->
+        GlobalScope.launch {
+            try {
+                val alreadyGranted = contains(options).await()
+                if (alreadyGranted) {
+                    console.log("Already granted: $formattedOrigin")
+                    callback(true)
+                } else {
+                    val granted = request(options).await()
                     if (granted) {
                         console.log("Permission granted: $formattedOrigin")
                     } else {
@@ -254,6 +250,9 @@ class Options {
                     }
                     callback(granted)
                 }
+            } catch (e: dynamic) {
+                console.warn("Permission check/request failed for $formattedOrigin", e)
+                callback(false)
             }
         }
     }
