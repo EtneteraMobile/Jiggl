@@ -17,7 +17,8 @@ object AppPreferences {
 
     fun setPreferences(prefs: Preferences): Job =
         GlobalScope.launch(Dispatchers.Default) {
-            sync.set(prefs)
+            // Ensure we wait for the write to complete for consistency across browsers
+            sync.set(prefs).await()
         }
 
     private fun getDefaults(): Preferences =
