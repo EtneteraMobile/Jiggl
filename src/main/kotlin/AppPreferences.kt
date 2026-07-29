@@ -12,7 +12,7 @@ object AppPreferences {
 
     suspend fun getPreferences(): Preferences {
         val result = sync.get(getDefaults()).await()
-        return result.unsafeCast<Preferences>()
+        return migrateLegacyJiraUrls(result.unsafeCast<Preferences>())
     }
 
     fun setPreferences(prefs: Preferences): Job =
@@ -21,11 +21,23 @@ object AppPreferences {
             sync.set(prefs).await()
         }
 
+    /**
+     * Older versions mapped Toggl project id -> Jira url in [Preferences.jiraUrls].
+     * Carry those urls over as servers without project keys so the user only
+     * has to fill in the keys on the options page; they never match until then.
+     */
+    private fun migrateLegacyJiraUrls(prefs: Preferences): Preferences {
+        if (prefs.jiraServers.isEmpty() && prefs.jiraUrls.isNotEmpty()) {
+            prefs.jiraServers = prefs.jiraUrls.map { "" to it.second }.toTypedArray()
+        }
+        return prefs
+    }
+
     private fun getDefaults(): Preferences =
         Preferences {
             jiraUrl = "https://jira.atlassian.net"
             jiraUrls = arrayOf()
-            togglProjects = arrayOf(-1 to "Select project")
+            jiraServers = arrayOf()
             mergeEntriesBy = "no-merge"
             jumpToToday = false
             togglApiToken = ""
@@ -39,7 +51,9 @@ object AppPreferences {
 /**
  * Model class for app preferences.
  *
- * @property jiraUrl Base JIRA url.
+ * @property jiraUrl Base JIRA url, used when no server in [jiraServers] matches.
+ * @property jiraServers Additional Jira servers as comma-separated Jira project keys (e.g. "ABC, INT") -> url.
+ * @property jiraUrls Legacy mapping (Toggl project id -> url), only read to migrate into [jiraServers].
  * @property mergeEntriesBy Selected merging options of toggl entries.
  *                          Possible values are `no-merge`, `issue-only`, `issue-and-date`, `issue-and-date-and-desc`.
  * @property jumpToToday Flag whether date picker should show today date by default.
@@ -51,8 +65,8 @@ object AppPreferences {
  */
 external interface Preferences {
     var jiraUrl: String
-    var jiraUrls: Array<Pair<Int, String>> // Toggl project id -> Jira url
-    var togglProjects: Array<Pair<Int, String>> // Project id -> project name
+    var jiraServers: Array<Pair<String, String>> // Jira project keys csv -> Jira url
+    var jiraUrls: Array<Pair<Int, String>> // Legacy: Toggl project id -> Jira url
     var mergeEntriesBy: String
     var jumpToToday: Boolean
     var togglApiToken: String

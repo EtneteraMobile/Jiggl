@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+### Added
+- Multiple Jira servers routed by Jira project key: each additional server lists the project keys (e.g. "ABC, INT") it handles; everything else goes to the default server
+- Issue links in the popup now point to the server the issue is logged to
+- Each entry in the popup shows the Jira host it will be logged to (when more than one server is configured)
+- Popup header lists the signed-in account per Jira host on its own line instead of next to the app name
+
+### Changed
+- Additional Jira servers are no longer mapped by Toggl project; existing servers are migrated and need their project keys filled in on the options page
+- Saving options now requests host permission for all configured Jira servers, not just the default one
+
 ## [0.4.4] - 2025-08-28
 ### Added
 - Firefox implementation

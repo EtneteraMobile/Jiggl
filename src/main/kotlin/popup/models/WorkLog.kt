@@ -14,7 +14,6 @@ data class WorkLog(
     var timeSpentInt: Int,
     var submit: Boolean,
     var hidden: Boolean = false,
-    var projectId: Int? = null
 ) {
     companion object {
         /**

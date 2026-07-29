@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Jiggl is a Chrome/Firefox browser extension (Kotlin/JS, not a JVM project) that syncs Toggl time entries to Jira worklogs. `AGENTS.md` contains the same contributor guidelines and should be kept in sync with this file.
+Jiggl is a Chrome/Firefox browser extension (Kotlin/JS, not a JVM project) that syncs Toggl time entries to Jira worklogs. `AGENTS.md` is a symlink to this file.
 
 ## Commands
 
@@ -28,7 +28,7 @@ Toolchain: old `org.jetbrains.kotlin.js` Gradle plugin, Kotlin 1.9.10, kotlinx.s
 
 **Browser APIs via hand-written externals.** `src/main/kotlin/browser/` holds external declarations for `browser.storage`, `browser.tabs`, `browser.permissions`. They target the promise-based `browser.*` namespace; `js/browser-polyfill.js` makes that work on Chrome. Plain JS objects are created with the `js("({})")` / external-interface pattern (see `Preferences` in `AppPreferences.kt`) — these are not serializable Kotlin classes.
 
-**Preferences** (`AppPreferences.kt`) are stored in `browser.storage.sync` as a plain JS object. Multi-Jira support works by mapping Toggl project id → Jira URL (`jiraUrls`); `jiraUrl` is the default server. Toggl entry descriptions are parsed into issue key + comment by the user-configurable `togglTemplate` regex with named groups (`utils/js/regexp.kt` wraps JS RegExp because Kotlin's Regex lacks named-group support here; parsing lives in `popup/models/WorkLog.fromTemplate`).
+**Preferences** (`AppPreferences.kt`) are stored in `browser.storage.sync` as a plain JS object. Multi-Jira support works by mapping comma-separated Jira project keys → Jira URL (`jiraServers`, resolved per issue by `utils/JiraRouting.kt`); `jiraUrl` is the default server for unmatched issues. The legacy `jiraUrls` mapping (Toggl project id → URL) is migrated on read into key-less `jiraServers` entries and cleared on the next options save. Toggl entry descriptions are parsed into issue key + comment by the user-configurable `togglTemplate` regex with named groups (`utils/js/regexp.kt` wraps JS RegExp because Kotlin's Regex lacks named-group support here; parsing lives in `popup/models/WorkLog.fromTemplate`).
 
 **HTTP has two paths.** GETs (Toggl API, Jira user/worklog reads) go through Ktor's JS client with cookie/token auth. The Jira worklog POST (`JiraApi.logWork`) is special: it first tries messaging the content script (`resources/js/content.js`, injected into Jira tabs, message type `jiggl/logWork`) to perform a same-origin fetch — required on Firefox, where cross-origin extension POSTs trip Jira's XSRF protection — and falls back to a direct `window.fetch` with credentials, which works in Chrome. When testing Jira logging in Firefox, a Jira tab must be open.
 
@@ -39,3 +39,5 @@ Toolchain: old `org.jetbrains.kotlin.js` Gradle plugin, Kotlin 1.9.10, kotlinx.s
 - Tests mirror main package paths under `src/test/kotlin/` (note the flat `utils.extensions/` directory naming), named `ThingBeingTestedTest.kt`, using `kotlin-test-js`. Logic in `utils/` and `popup/models/` is expected to have tests.
 - Update `CHANGELOG.md` for user-visible changes; version is duplicated in `build.gradle` and both manifests.
 - The Toggl API token comes from extension storage — never hardcode it.
+- Kotlin style: 4-space indent, standard Kotlin naming; prefer small, focused files and localized changes.
+- Commits: clear imperative subject (max ~72 chars). PRs: concise description, rationale, screenshots/GIFs for UI changes, linked issues.

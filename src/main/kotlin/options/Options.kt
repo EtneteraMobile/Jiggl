@@ -9,10 +9,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.*
 import kotlinx.coroutines.await
 import kotlinx.html.dom.append
-import kotlinx.html.dom.create
-import kotlinx.html.id
 import kotlinx.html.js.*
-import kotlinx.dom.clear
 import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import utils.extensions.isVisible
@@ -48,33 +45,18 @@ class Options {
         togglTokenButton.onclick = {
             togglTokenButton.firstElementChild?.classList?.toggle("loading")
             GlobalScope.launch {
-
+                val status = document.getElementById("status")
                 try {
-                    TogglApi.getUserData(togglApiToken.value).let { togglUser ->
-                        togglTokenButton.firstElementChild?.classList?.toggle("loading")
-                        (document.getElementsByClassName("toggl-projects")).asList().forEach { selectItem ->
-                            (selectItem as HTMLSelectElement).clear()
-                            selectItem.append {
-                                option {
-                                    value = "-1"
-                                    label = "Select project"
-                                }
-                            }
-                            togglUser.data.projects.forEach { project ->
-                                document.create.option {
-                                    value = project.id.toString()
-                                    label = project.name
-                                }.let { selectItem.add(it) }
-                            }
-                        }
-                    }
+                    TogglApi.getUserData(togglApiToken.value)
+                    status?.textContent = "Toggl token OK."
                 } catch (e: Exception) {
-                    togglTokenButton.firstElementChild?.classList?.toggle("loading")
+                    status?.textContent = "Toggl token check failed."
                 }
+                togglTokenButton.firstElementChild?.classList?.toggle("loading")
             }
         }
 
-        addJiraServerButton?.onclick = { addJiraServerInput() }
+        addJiraServerButton?.onclick = { addJiraServerRow() }
 
         templatePopup.onclick = { e ->
             showPopup(e)
@@ -91,13 +73,15 @@ class Options {
         roundType.value = preferences.roundType
         roundValue.value = preferences.roundValue.toString()
         roundValSection.isVisible = preferences.roundType != "no-round"
-        addJiraServerInput(preferences)
+        preferences.jiraServers.forEach { server ->
+            addJiraServerRow(keys = server.first, url = server.second)
+        }
     }
 
     private fun onSaveClicked() {
-        val jiraInputValue = jiraUrl.value.trim()
+        val urls = listOf(jiraUrl.value.trim()) + getAddedJiraServers().map { it.second }
 
-        requestJiraPermission(jiraInputValue) { granted ->
+        requestJiraPermission(urls) { granted ->
             if (granted) {
                 GlobalScope.launch {
                     saveOptions()
@@ -112,9 +96,9 @@ class Options {
 
     private suspend fun saveOptions() {
         val options = Preferences {
-            jiraUrl = this@Options.jiraUrl.value.let { if (it.endsWith("/")) it.substring(0, it.length - 1) else it }
-            jiraUrls = getAddedJiraUrls().toTypedArray()
-            togglProjects = getRenderedProjects().toTypedArray()
+            jiraUrl = this@Options.jiraUrl.value.trim().trimEnd('/')
+            jiraServers = getAddedJiraServers().toTypedArray()
+            jiraUrls = arrayOf() // legacy mapping is fully replaced by jiraServers once saved
             mergeEntriesBy = this@Options.mergeEntriesBy.value
             jumpToToday = this@Options.jumpToToday.checked
             togglApiToken = this@Options.togglApiToken.value
@@ -155,48 +139,24 @@ class Options {
             }
         }
 
-    private fun addJiraServerInput() {
+    private fun addJiraServerRow(keys: String = "", url: String = "") {
         jiraSection.append {
-            input(classes = "jira-url additional-jira-url")
-            select(classes = "toggl-projects") {
-                option {
-                    value = "-1"
-                    text("Select project")
+            div(classes = "jira-server-row") {
+                input(classes = "jira-url jira-server-url") {
+                    placeholder = "https://other-jira.example.com"
+                    value = url
                 }
-            }
-            div(classes = "popup") {
-                onClickFunction = { e -> showPopup(e) }
-                i(classes = "far fa-question-circle")
-                span(classes = "popupText") {
-                    id = "jiraPopup"
-                    text("Select Toggl project to log into this Jira (refresh toggl token if empty)")
-                }
-            }
-            br()
-        }
-    }
-
-    private fun addJiraServerInput(preferences: Preferences) {
-        preferences.jiraUrls.forEach { jira ->
-            jiraSection.append {
-                input(classes = "jira-url additional-jira-url") { value = jira.second }
-                select(classes = "toggl-projects") {
-                    preferences.togglProjects.forEach { project ->
-                        option {
-                            value =  project.first.toString()
-                            text(project.second)
-                            selected = jira.first == project.first
-                        }
-                    }
+                input(classes = "jira-server-keys") {
+                    placeholder = "ABC, INT"
+                    value = keys
                 }
                 div(classes = "popup") {
                     onClickFunction = { e -> showPopup(e) }
                     i(classes = "far fa-question-circle")
                     span(classes = "popupText") {
-                        text("Select Toggl project to log into this Jira (refresh toggl token if empty)")
+                        text("Comma-separated Jira project keys logged to this server (e.g. ABC, INT). Issues with any other key go to the default server above.")
                     }
                 }
-                br()
             }
         }
     }
@@ -205,53 +165,41 @@ class Options {
         (e.target as HTMLElement).parentElement?.querySelector(".popupText")?.classList?.toggle("show")
     }
 
-    private fun getRenderedProjects(): List<Pair<Int, String>> {
-        (document.getElementsByClassName("toggl-projects")).let {
-            if (it.length > 0) {
-                return (it[0] as HTMLSelectElement).options.asList().map {
-                    (it as HTMLOptionElement).let { it.value.toInt() to it.label }
-                }
-            }
+    private fun getAddedJiraServers(): List<Pair<String, String>> =
+        document.getElementsByClassName("jira-server-row").asList().mapNotNull { row ->
+            val url = (row.querySelector(".jira-server-url") as HTMLInputElement).value.trim().trimEnd('/')
+            val keys = (row.querySelector(".jira-server-keys") as HTMLInputElement).value.trim()
+            if (url.isBlank()) null else keys to url
         }
-        return emptyList()
-    }
 
-    private fun getAddedJiraUrls(): List<Pair<Int, String>> {
-        val items = mutableListOf<Pair<Int, String>>()
-        (document.getElementsByClassName("additional-jira-url")).asList().forEach {
-            if ((it as HTMLInputElement).value.isNotBlank()) {
-                val url = it.value.let { if (it.endsWith("/")) it.substring(0, it.length - 1) else it }
-                val selectedId = ((it.nextSibling as HTMLSelectElement).selectedOptions[0] as HTMLOptionElement).value
-                items.add(selectedId.toInt() to url)
-            }
-        }
-        return items
-    }
+    // Permissions for configured Jira urls
 
-    // Permissions for JiraURL
-
-    private fun requestJiraPermission(url: String, callback: (Boolean) -> Unit) {
-        val formattedOrigin = if (url.endsWith("/")) "$url*" else "$url/*"
+    private fun requestJiraPermission(urls: List<String>, callback: (Boolean) -> Unit) {
+        val origins = urls
+            .filter { it.isNotBlank() }
+            .map { url -> if (url.endsWith("/")) "$url*" else "$url/*" }
+            .distinct()
+            .toTypedArray()
         val options = js("({})")
-        options.origins = arrayOf(formattedOrigin)
+        options.origins = origins
 
         GlobalScope.launch {
             try {
                 val alreadyGranted = contains(options).await()
                 if (alreadyGranted) {
-                    console.log("Already granted: $formattedOrigin")
+                    console.log("Already granted: ${origins.joinToString()}")
                     callback(true)
                 } else {
                     val granted = request(options).await()
                     if (granted) {
-                        console.log("Permission granted: $formattedOrigin")
+                        console.log("Permission granted: ${origins.joinToString()}")
                     } else {
-                        console.warn("Permission denied: $formattedOrigin")
+                        console.warn("Permission denied: ${origins.joinToString()}")
                     }
                     callback(granted)
                 }
             } catch (e: dynamic) {
-                console.warn("Permission check/request failed for $formattedOrigin", e)
+                console.warn("Permission check/request failed for ${origins.joinToString()}", e)
                 callback(false)
             }
         }

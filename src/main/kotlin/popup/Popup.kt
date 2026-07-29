@@ -15,6 +15,7 @@ import kotlinx.html.js.tr
 import org.w3c.dom.*
 import popup.models.WorkLog
 import utils.extensions.*
+import utils.resolveJiraUrl
 import kotlinx.browser.document
 import kotlinx.browser.localStorage
 import kotlinx.dom.addClass
@@ -92,17 +93,25 @@ class Popup {
 
     private suspend fun setUserData() {
         val statusDiv = document.getElementById("jira-status") as HTMLDivElement
-        JiraApi.getUserData(settings.jiraUrl).let {
-            myEmailAddresses.put(settings.jiraUrl, it.emailAddress)
-            statusDiv.append {
-                div { text("${it.displayName} (${it.emailAddress})") }
-            }
-        }
-        settings.jiraUrls.forEach { jiraUrl ->
-            JiraApi.getUserData(jiraUrl.second).let { jiraUser ->
-                myEmailAddresses.put(jiraUrl.second, jiraUser.emailAddress)
+        val urls = (listOf(settings.jiraUrl) + settings.jiraServers.map { it.second }).distinct()
+        urls.forEach { jiraUrl ->
+            try {
+                JiraApi.getUserData(jiraUrl).let { jiraUser ->
+                    myEmailAddresses.put(jiraUrl, jiraUser.emailAddress)
+                    statusDiv.append {
+                        div {
+                            span(classes = "jira-host") { text(jiraUrl.toHost()) }
+                            text(" ${jiraUser.displayName} (${jiraUser.emailAddress})")
+                        }
+                    }
+                }
+            } catch (e: dynamic) {
+                console.warn("Failed to load Jira user from $jiraUrl", e)
                 statusDiv.append {
-                    div { text("${jiraUser.displayName} (${jiraUser.emailAddress})") }
+                    div {
+                        span(classes = "jira-host") { text(jiraUrl.toHost()) }
+                        text(" not logged in")
+                    }
                 }
             }
         }
@@ -159,7 +168,6 @@ class Popup {
                         comment = tmpLog?.description ?: entry.description,
                         started = entry.start,
                         dateKey = entry.start.toDateString(),
-                        projectId = entry.pid
                     )
                     logs.add(log)
                 }
@@ -203,7 +211,7 @@ class Popup {
                     started = log.started
                 )
 
-                val jiraUrl = getJiraForProject(log.projectId)
+                val jiraUrl = getJiraForIssue(log.issue)
                 JiraApi.logWork(jiraUrl, log.issue, input).let { status ->
                     if (status.isSuccess()) {
                         log.submit = false
@@ -297,10 +305,14 @@ class Popup {
                         }
                     }
                     td {
+                        val jiraUrl = getJiraForIssue(it.issue)
                         a {
-                            href = "${settings.jiraUrl}/browse/${it.issue}"
+                            href = "$jiraUrl/browse/${it.issue}"
                             target = "_blank"
                             text(it.issue)
+                        }
+                        if (showJiraHosts && it.issue.isNotEmpty()) {
+                            div(classes = "jira-host") { text(jiraUrl.toHost()) }
                         }
                     }
                     td {
@@ -355,7 +367,7 @@ class Popup {
             resultCell?.classList?.add("loading")
             if (!log.hidden) {
                 val job = GlobalScope.launch {
-                    val jiraUrl = getJiraForProject(log.projectId)
+                    val jiraUrl = getJiraForIssue(log.issue)
                     try {
                         JiraApi.getWorklog(jiraUrl, log.issue).worklogs.forEach { worklog ->
                             if (myEmailAddresses[jiraUrl] == worklog.author.emailAddress) {
@@ -421,7 +433,13 @@ class Popup {
         }
     }
 
-    private fun getJiraForProject(projectId: Int?): String =
-        settings.jiraUrls.find { projectId == it.first }?.second
-            ?: settings.jiraUrl
+    private fun getJiraForIssue(issue: String): String =
+        resolveJiraUrl(issue, settings.jiraServers, settings.jiraUrl)
+
+    /** Show the target host per issue only when logs can go to more than one server. */
+    private val showJiraHosts: Boolean
+        get() = settings.jiraServers.any { it.second != settings.jiraUrl }
+
+    private fun String.toHost(): String =
+        removePrefix("https://").removePrefix("http://").substringBefore('/')
 }
