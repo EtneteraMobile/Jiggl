@@ -57,7 +57,7 @@ data class JiraWorklog(
             @SerialName("displayName")
             val displayName: String,
             @SerialName("emailAddress")
-            val emailAddress: String,
+            val emailAddress: String? = null,
             @SerialName("self")
             val self: String,
             @SerialName("timeZone")
@@ -85,7 +85,7 @@ data class JiraWorklog(
             @SerialName("displayName")
             val displayName: String,
             @SerialName("emailAddress")
-            val emailAddress: String,
+            val emailAddress: String? = null,
             @SerialName("self")
             val self: String,
             @SerialName("timeZone")

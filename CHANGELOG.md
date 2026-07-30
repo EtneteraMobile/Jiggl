@@ -11,6 +11,9 @@
 - Additional Jira servers are no longer mapped by Toggl project; existing servers are migrated and need their project keys filled in on the options page
 - Saving options now requests host permission for all configured Jira servers, not just the default one
 
+### Fixed
+- Already-logged check ("OK" mark) broken when Jira omits the author email from worklogs (e.g. after a privacy-settings change): the whole worklog response failed to parse and the check silently did nothing
+
 ## [0.4.4] - 2025-08-28
 ### Added
 - Firefox implementation
