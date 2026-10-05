@@ -11,10 +11,14 @@ Jiggl is a Chrome/Firefox browser extension (Kotlin/JS, not a JVM project) that 
 ```bash
 ./gradlew build -Pbrowser=chrome    # build unpacked extension into build/extension/
 ./gradlew build -Pbrowser=firefox   # same, with Firefox manifest
-./gradlew bundle -Pbrowser=chrome   # zip for distribution into build/distributions/
+./gradlew bundle -Pbrowser=chrome   # zip for distribution: build/distributions/Jiggl-<version>-chrome.zip
 ./gradlew test                      # Kotlin/JS tests (runs in a headless browser via Karma)
 ./gradlew test --tests "utils.extensions.DateExtensionsTest"   # single test class
+scripts/bump-version.sh 0.5.1       # set version in build.gradle + both manifests, cut CHANGELOG section
+scripts/release.sh 0.5.1            # test, build, upload to both stores, tag, GitHub Release (needs .release.env)
 ```
+
+Releases are published from the maintainer's machine, not CI; never run `scripts/release.sh` unless explicitly asked — it publishes to the public stores.
 
 `-Pbrowser` defaults to `chrome`. It only selects which `src/main/resources/manifest-<browser>.json` gets copied to `manifest.json` (the `copyManifest` task); the compiled code is identical. Load the unpacked extension from `build/extension/` (Chrome: `chrome://extensions`; Firefox: `about:debugging` → This Firefox → Load Temporary Add-on).
 
@@ -37,7 +41,7 @@ Toolchain: old `org.jetbrains.kotlin.js` Gradle plugin, Kotlin 1.9.10, kotlinx.s
 ## Conventions
 
 - Tests mirror main package paths under `src/test/kotlin/` (note the flat `utils.extensions/` directory naming), named `ThingBeingTestedTest.kt`, using `kotlin-test-js`. Logic in `utils/` and `popup/models/` is expected to have tests.
-- Update `CHANGELOG.md` for user-visible changes; version is duplicated in `build.gradle` and both manifests.
+- Update `CHANGELOG.md` for user-visible changes; version is duplicated in `build.gradle` and both manifests (`scripts/bump-version.sh` updates all three).
 - The Toggl API token comes from extension storage — never hardcode it.
 - Kotlin style: 4-space indent, standard Kotlin naming; prefer small, focused files and localized changes.
 - Commits: clear imperative subject (max ~72 chars). PRs: concise description, rationale, screenshots/GIFs for UI changes, linked issues.

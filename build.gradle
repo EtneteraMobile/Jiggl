@@ -41,12 +41,13 @@ kotlin {
     }
 }
 
+def browser = project.findProperty('browser') ?: 'chrome'
+
 task bundle(type: Zip) {
     dependsOn assemble
     from "$projectDir/build/extension"
+    archiveClassifier = browser
 }
-
-def browser = project.findProperty('browser') ?: 'chrome'
 
 task copyManifest(type: Copy) {
     from "src/main/resources"
@@ -55,4 +56,7 @@ task copyManifest(type: Copy) {
     rename "manifest-${browser}.json", "manifest.json"
 }
 
-processResources.dependsOn copyManifest
+processResources {
+    dependsOn copyManifest
+    exclude "manifest-*.json"
+}
