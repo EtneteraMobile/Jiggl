@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.5.0] - 2026-10-05
 ### Added
 - Multiple Jira servers routed by Jira project key: each additional server lists the project keys (e.g. "ABC, INT") it handles; everything else goes to the default server
 - Issue links in the popup now point to the server the issue is logged to
