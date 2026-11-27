@@ -13,11 +13,11 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import kotlinx.browser.window
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.await
 import browser.tabs.query
 import browser.tabs.sendMessage
 import org.w3c.fetch.Headers
-import org.w3c.fetch.RequestCredentials
 import org.w3c.fetch.RequestInit
 
 /**
@@ -79,29 +79,29 @@ object JiraApi {
         qi.url = arrayOf(pattern)
         val tabs = try {
             query(qi).await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: dynamic) {
             emptyArray()
         }
 
-        if (tabs.isNotEmpty() && tabs[0].id != null) {
-            val tabId = tabs[0].id as Int
+        val availableTabs = tabs.filter { it.id != null && it.discarded != true && it.frozen != true }
+        val tabId = (availableTabs.firstOrNull { it.active == true } ?: availableTabs.firstOrNull())?.id
+        if (tabId != null) {
             val msg = js("({})")
             msg.type = "jiggl/logWork"
             msg.issue = issue
             msg.body = body
-            val result = try {
-                sendMessage(tabId, msg).await()
+            try {
+                val reply = sendMessage(tabId, msg).await()
+                val status = reply?.status as? Int
+                if (status != null && status > 0) return HttpStatusCode.fromValue(status)
+                error(reply?.error as? String ?: "The Jira tab did not confirm the request.")
             } catch (e: dynamic) {
-                null
+                // A missing content script cannot have issued a POST. Other failures may occur after delivery.
+                val message = e?.message as? String
+                if (message?.contains("Receiving end does not exist") != true) throw e
             }
-            val statusNumber = try {
-                js("Number(result && result.status || 0)") as Double
-            } catch (e: dynamic) { 0.0 }
-            val status = statusNumber.toInt()
-            if (status in 200..299) {
-                return HttpStatusCode.fromValue(status)
-            }
-            // If messaging failed or non-2xx, fall back to direct fetch
         }
 
         // Fallback: direct cross-origin fetch (works in Chrome; may 403 in Firefox)

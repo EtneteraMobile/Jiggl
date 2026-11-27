@@ -35,6 +35,7 @@ class Popup {
     private lateinit var settings: Preferences
 
     private val myEmailAddresses = hashMapOf<String, String>() // jira url to mail
+    private var submitting = false
     private val logs = mutableListOf<WorkLog>()
     private var issuesCheckboxes: List<Element>? = null
 
@@ -193,51 +194,60 @@ class Popup {
     }
 
     private fun submitEntries() {
+        if (submitting) return
+        submitting = true
         submit.disabled = true
+        val alert = document.getElementById("error")
+        alert?.textContent = ""
+        alert?.removeClass("error")
         GlobalScope.launch {
-            for (log in logs) {
-                if (!log.submit || log.hidden) continue
+            try {
+                for (log in logs.toList()) {
+                    if (!log.submit || log.hidden) continue
+                    val result = document.getElementById("result-${log.id}")
+                    val comment = document.getElementById("comment-${log.id}") as? HTMLInputElement
+                    result?.textContent = "Pending..."
+                    result?.addClass("info")
 
-                val checkboxElement = document.getElementById(log.id.toString()) as? HTMLInputElement
-                val commentElement = document.getElementById("comment-${log.id}") as? HTMLInputElement
-                val resultElement = document.getElementById("result-${log.id}")?.apply {
-                    textContent = "Pending..."
-                    addClass("info")
-                }
+                    val failure = try {
+                        val input = LogWorkInput(
+                            comment = comment?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
+                            timeSpentSeconds = log.timeSpentInt,
+                            started = log.started
+                        )
+                        val status = withTimeoutOrNull(30_000L) {
+                            JiraApi.logWork(getJiraForIssue(log.issue), log.issue, input)
+                        }
+                        when {
+                            status == null -> "No confirmation after 30 seconds. Check the Jira worklog before retrying."
+                            status == HttpStatusCode.NotFound -> "Jira could not find this issue (404)."
+                            !status.isSuccess() -> "Jira returned ${status.value} ${status.description}."
+                            else -> null
+                        }
+                    } catch (e: dynamic) {
+                        "Could not confirm the worklog. ${e?.message ?: "Request failed."} Check Jira before retrying."
+                    }
+                    result?.removeClass("info")
+                    if (failure != null) {
+                        result?.textContent = "See error"
+                        alert?.textContent = "${log.issue}: $failure"
+                        alert?.addClass("error")
+                        break
+                    }
 
-                val input = LogWorkInput(
-                    comment = commentElement?.value.let { if (it.isNullOrBlank()) settings.defaultComment else it },
-                    timeSpentSeconds = log.timeSpentInt,
-                    started = log.started
-                )
-
-                val jiraUrl = getJiraForIssue(log.issue)
-                JiraApi.logWork(jiraUrl, log.issue, input).let { status ->
-                    if (status.isSuccess()) {
-                        log.submit = false
-                        resultElement?.apply {
-                            textContent = "OK"
-                            addClass("success")
-                            removeClass("info")
-                        }
-                        commentElement?.disabled = true
-                        checkboxElement?.apply {
-                            checked = false
-                            disabled = true
-                        }
-                    } else {
-                        val e = when (status) {
-                            HttpStatusCode.NotFound -> "Issue ${log.issue} not found"
-                            else -> "error"
-                        }
-                        document.querySelector("p#error")?.apply {
-                            textContent = e
-                            addClass("error")
-                        }
+                    log.submit = false
+                    result?.textContent = "OK"
+                    result?.addClass("success")
+                    comment?.disabled = true
+                    (document.getElementById(log.id.toString()) as? HTMLInputElement)?.apply {
+                        checked = false
+                        disabled = true
                     }
                 }
+            } finally {
+                submitting = false
+                submit.disabled = false
             }
-            submit.disabled = false
         }
     }
 
@@ -403,7 +413,7 @@ class Popup {
             }
         }
         jobs.joinAll()
-        submit.disabled = false
+        submit.disabled = submitting
     }
 
     private fun onIssueCheckChanged(element: HTMLInputElement) {

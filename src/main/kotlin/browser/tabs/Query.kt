@@ -12,6 +12,9 @@ external interface QueryInfo {
 }
 
 external interface Tab {
+    val active: Boolean?
+    val discarded: Boolean?
+    val frozen: Boolean?
     var id: Int?
     var url: String?
 }

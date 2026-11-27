@@ -30,8 +30,7 @@
         credentials: 'include',
         body
       });
-      const text = await resp.text();
-      return { status: resp.status, body: text };
+      return { status: resp.status };
     } catch (e) {
       return { error: String(e) };
     }

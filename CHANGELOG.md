@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-27
+### Fixed
+- Worklog submission shows the affected issue and error when Jira rejects a request or fails to confirm it within 30 seconds. Jiggl skips suspended Jira tabs and avoids automatically resending an unconfirmed worklog.
+
 ## [0.5.0] - 2026-10-05
 ### Added
 - Multiple Jira servers routed by Jira project key: each additional server lists the project keys (e.g. "ABC, INT") it handles; everything else goes to the default server

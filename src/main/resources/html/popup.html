@@ -3,8 +3,6 @@
 
     <head>
         <title>Jiggl</title>
-        <script type="text/javascript" src="/js/libs/jquery.min.js"></script>
-        <script type="text/javascript" src="/js/libs/lodash.core.js"></script>
         <script type="text/javascript" src="/js/browser-polyfill.js"></script>
         <script type="text/javascript" src="/Jiggl.js"></script>
         <script type="text/javascript" src="/js/redraw.js"></script>
@@ -69,7 +67,7 @@
         <br />
         <button id="submit" disabled>Log work to JIRA</button>
         <br />
-        <p id="error"></p>
+        <p id="error" role="alert"></p>
         <i>Logging repeatedly will add new time logs for the same JIRA task, instead of overwriting the old log. So log only once per Toggl entry.</i>
     </body>
 
